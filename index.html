@@ -2,86 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Tic-Tac-Toe</title>
+  <title>Pong</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: grid;
-      place-items: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    #board {
-      display: grid;
-      grid-template-columns: repeat(3, 80px);
-      gap: 5px;
-    }
-    .cell {
-      width: 80px;
-      height: 80px;
-      border: 2px solid #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      cursor: pointer;
-    }
+    body { margin: 0; background: #111; display: grid; place-items: center; height: 100vh; }
+    canvas { background: #000; border: 2px solid #fff; }
   </style>
 </head>
 <body>
-  <h1>Tic-Tac-Toe</h1>
-  <div id="status">Player X's turn</div>
-  <div id="board"></div>
+<canvas id="game" width="800" height="500"></canvas>
 
-  <script>
-    const board = Array(9).fill("");
-    let current = "X";
-    let gameOver = false;
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-    const boardEl = document.getElementById("board");
-    const statusEl = document.getElementById("status");
+const left = { x: 20, y: 200, w: 10, h: 100, dy: 0 };
+const right = { x: 770, y: 200, w: 10, h: 100 };
+const ball = { x: 400, y: 250, vx: 5, vy: 3, r: 8 };
 
-    function checkWin() {
-      const wins = [
-        [0,1,2],[3,4,5],[6,7,8],
-        [0,3,6],[1,4,7],[2,5,8],
-        [0,4,8],[2,4,6]
-      ];
+let scoreL = 0, scoreR = 0;
 
-      for (const [a,b,c] of wins) {
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-          statusEl.textContent = `Player ${board[a]} wins!`;
-          gameOver = true;
-          return;
-        }
-      }
+document.addEventListener("keydown", e => {
+  if (e.key === "w") left.dy = -6;
+  if (e.key === "s") left.dy = 6;
+});
+document.addEventListener("keyup", e => {
+  if (e.key === "w" || e.key === "s") left.dy = 0;
+});
 
-      if (!board.includes("")) {
-        statusEl.textContent = "It's a draw!";
-        gameOver = true;
-      }
+function loop() {
+  left.y += left.dy;
+  left.y = Math.max(0, Math.min(canvas.height - left.h, left.y));
+
+  right.y += (ball.y - (right.y + right.h / 2)) * 0.08;
+
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+
+  if (ball.y < ball.r || ball.y > canvas.height - ball.r) ball.vy *= -1;
+
+  [left, right].forEach(p => {
+    if (ball.x - ball.r < p.x + p.w &&
+        ball.x + ball.r > p.x &&
+        ball.y + ball.r > p.y &&
+        ball.y - ball.r < p.y + p.h) {
+      ball.vx *= -1;
     }
+  });
 
-    function render() {
-      boardEl.innerHTML = "";
-      board.forEach((value, i) => {
-        const cell = document.createElement("div");
-        cell.className = "cell";
-        cell.textContent = value;
-        cell.onclick = () => {
-          if (board[i] || gameOver) return;
-          board[i] = current;
-          current = current === "X" ? "O" : "X";
-          render();
-          checkWin();
-          if (!gameOver)
-            statusEl.textContent = `Player ${current}'s turn`;
-        };
-        boardEl.appendChild(cell);
-      });
-    }
+  if (ball.x < 0) { scoreR++; reset(); }
+  if (ball.x > canvas.width) { scoreL++; reset(); }
 
-    render();
-  </script>
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(left.x,left.y,left.w,left.h);
+  ctx.fillRect(right.x,right.y,right.w,right.h);
+
+  ctx.beginPath();
+  ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.font = "32px Arial";
+  ctx.fillText(scoreL, 300, 40);
+  ctx.fillText(scoreR, 480, 40);
+
+  requestAnimationFrame(loop);
+}
+
+function reset() {
+  ball.x = canvas.width / 2;
+  ball.y = canvas.height / 2;
+  ball.vx *= -1;
+}
+
+loop();
+</script>
 </body>
 </html>
